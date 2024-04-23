@@ -20,7 +20,7 @@
     "graphTooltip": 0,
     "id": 1,
     "links": [],
-    "liveNow": false,
+    "liveNow": true,
     "panels": [
         {
             "collapsed": false,
@@ -43,8 +43,7 @@
             "fieldConfig": {
                 "defaults": {
                     "color": {
-                        "fixedColor": "super-light-yellow",
-                        "mode": "fixed"
+                        "mode": "palette-classic"
                     },
                     "custom": {
                         "axisBorderShow": false,
@@ -80,17 +79,31 @@
                                 "value": 80
                             }
                         ]
-                    }
+                    },
+                    "unit": "currencyUSD"
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "cars"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "none"
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
                 "h": 8,
-                "w": 10,
+                "w": 8,
                 "x": 0,
                 "y": 1
             },
-            "id": 11,
+            "id": 12,
             "options": {
                 "barRadius": 0,
                 "barWidth": 0.94,
@@ -109,7 +122,7 @@
                     "mode": "multi",
                     "sort": "none"
                 },
-                "xField": "year",
+                "xField": "price",
                 "xTickLabelRotation": 0,
                 "xTickLabelSpacing": 100
             },
@@ -122,7 +135,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT year, COUNT(id) as cars FROM autoria \nWHERE year BETWEEN ${year_min:raw} AND ${year_max:raw} \nAND price BETWEEN ${price_min:raw} AND ${price_max:raw}\nAND brand LIKE any(array[${brand:sqlstring}])\nAND model LIKE any(array[${model:sqlstring}])\nGROUP BY year ORDER BY year asc;",
+                    "rawSql": "SELECT CAST(CAST(price AS FLOAT)/1000 AS INT) * 1000 as price, COUNT(id) as cars \n      FROM autoria \n      WHERE year BETWEEN ${year_min:raw} AND ${year_max:raw} \n      AND price BETWEEN ${price_min:raw} AND ${price_max:raw}\n      AND brand LIKE any(array[${brand:sqlstring}])\n      AND model LIKE any(array[${model:sqlstring}])\n      GROUP BY CAST(CAST(price AS FLOAT)/1000 AS INT) * 1000  \n      ORDER BY CAST(CAST(price AS FLOAT)/1000 AS INT) * 1000 asc;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -160,7 +173,7 @@
                     "table": "autoria"
                 }
             ],
-            "title": "Year distribution",
+            "title": "Price distribution",
             "type": "barchart"
         },
         {
@@ -233,7 +246,7 @@
             "gridPos": {
                 "h": 16,
                 "w": 5,
-                "x": 10,
+                "x": 8,
                 "y": 1
             },
             "id": 13,
@@ -248,7 +261,13 @@
                     "reducer": [],
                     "show": false
                 },
-                "showHeader": true
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": false,
+                        "displayName": "Avg. Price"
+                    }
+                ]
             },
             "pluginVersion": "10.4.2",
             "targets": [
@@ -260,7 +279,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT format('%s %s (%s)', brand, model, year) as name, count(id) as cars, AVG(price) as \"Avg. Price\" FROM autoria \n  WHERE brand LIKE any(array[${brand:sqlstring}])\n        AND model LIKE any(array[${model:sqlstring}])\n        AND year BETWEEN ${year_min:raw} AND ${year_max:raw}\n        AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw}\n  GROUP BY model, brand, year \n  HAVING AVG(price) BETWEEN ${price_min:raw} AND ${price_max:raw}\n  ORDER BY cars DESC;",
+                    "rawSql": "SELECT format('%s %s (%s)', brand, model, year) as name, count(id) as cars, AVG(price) as \"Avg. Price\" FROM autoria \n  WHERE brand LIKE any(array[${brand:sqlstring}])\n        AND model LIKE any(array[${model:sqlstring}])\n        AND year BETWEEN ${year_min:raw} AND ${year_max:raw}\n        AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw}\n        AND gear LIKE any(array[${gear:sqlstring}])\n        AND fuel LIKE any(array[${fuel:sqlstring}])\n  GROUP BY model, brand, year \n  HAVING \n      AVG(price) BETWEEN ${price_min:raw} AND ${price_max:raw}\n      AND COUNT(id) >= ${cars_count:raw}\n  ORDER BY cars DESC;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -353,8 +372,135 @@
             },
             "gridPos": {
                 "h": 16,
-                "w": 5,
-                "x": 15,
+                "w": 6,
+                "x": 13,
+                "y": 1
+            },
+            "id": 15,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "enablePagination": true,
+                    "fields": [
+                        "Avg. Price"
+                    ],
+                    "reducer": [],
+                    "show": false
+                },
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": false,
+                        "displayName": "Avg. Price"
+                    }
+                ]
+            },
+            "pluginVersion": "10.4.2",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "cdjbt9pbix3wgc"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT format('%s %s [%s] (%s-%s)', brand, model, generation, MIN(year), MAX(year)) as name, count(id) as cars, AVG(price) as \"Avg. Price\" FROM autoria \n  WHERE brand LIKE any(array[${brand:sqlstring}])\n        AND model LIKE any(array[${model:sqlstring}])\n        AND year BETWEEN ${year_min:raw} AND ${year_max:raw}\n        AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw}\n        AND gear LIKE any(array[${gear:sqlstring}])\n        AND fuel LIKE any(array[${fuel:sqlstring}])\n  GROUP BY model, brand, generation \n  HAVING \n      AVG(price) BETWEEN ${price_min:raw} AND ${price_max:raw}\n      AND COUNT(id) >= ${cars_count:raw}\n  ORDER BY cars DESC;",
+                    "refId": "A",
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
+                }
+            ],
+            "title": "Distribution by brand/model/gen",
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "cdjbt9pbix3wgc"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "fixed"
+                    },
+                    "custom": {
+                        "align": "auto",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "filterable": false,
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "cars"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 100
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Avg. Price"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 100
+                            },
+                            {
+                                "id": "unit",
+                                "value": "currencyUSD"
+                            },
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "light-green",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 16,
+                "w": 4,
+                "x": 19,
                 "y": 1
             },
             "id": 14,
@@ -413,7 +559,8 @@
             "fieldConfig": {
                 "defaults": {
                     "color": {
-                        "mode": "palette-classic"
+                        "fixedColor": "super-light-yellow",
+                        "mode": "fixed"
                     },
                     "custom": {
                         "axisBorderShow": false,
@@ -449,31 +596,17 @@
                                 "value": 80
                             }
                         ]
-                    },
-                    "unit": "currencyUSD"
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "cars"
-                        },
-                        "properties": [
-                            {
-                                "id": "unit",
-                                "value": "none"
-                            }
-                        ]
                     }
-                ]
+                },
+                "overrides": []
             },
             "gridPos": {
                 "h": 8,
-                "w": 10,
+                "w": 8,
                 "x": 0,
                 "y": 9
             },
-            "id": 12,
+            "id": 11,
             "options": {
                 "barRadius": 0,
                 "barWidth": 0.94,
@@ -492,7 +625,7 @@
                     "mode": "multi",
                     "sort": "none"
                 },
-                "xField": "price",
+                "xField": "year",
                 "xTickLabelRotation": 0,
                 "xTickLabelSpacing": 100
             },
@@ -505,7 +638,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT CAST(CAST(price AS FLOAT)/1000 AS INT) * 1000 as price, COUNT(id) as cars \n      FROM autoria \n      WHERE year BETWEEN ${year_min:raw} AND ${year_max:raw} \n      AND price BETWEEN ${price_min:raw} AND ${price_max:raw}\n      AND brand LIKE any(array[${brand:sqlstring}])\n      AND model LIKE any(array[${model:sqlstring}])\n      GROUP BY CAST(CAST(price AS FLOAT)/1000 AS INT) * 1000  \n      ORDER BY CAST(CAST(price AS FLOAT)/1000 AS INT) * 1000 asc;",
+                    "rawSql": "SELECT year, COUNT(id) as cars FROM autoria \nWHERE year BETWEEN ${year_min:raw} AND ${year_max:raw} \nAND price BETWEEN ${price_min:raw} AND ${price_max:raw}\nAND brand LIKE any(array[${brand:sqlstring}])\nAND model LIKE any(array[${model:sqlstring}])\nGROUP BY year ORDER BY year asc;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -543,11 +676,11 @@
                     "table": "autoria"
                 }
             ],
-            "title": "Price distribution",
+            "title": "Year distribution",
             "type": "barchart"
         },
         {
-            "collapsed": false,
+            "collapsed": true,
             "gridPos": {
                 "h": 1,
                 "w": 24,
@@ -555,995 +688,993 @@
                 "y": 17
             },
             "id": 2,
-            "panels": [],
+            "panels": [
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "cdjbt9pbix3wgc"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "fixedColor": "light-blue",
+                                "mode": "fixed"
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    },
+                                    {
+                                        "color": "red",
+                                        "value": 80
+                                    }
+                                ]
+                            }
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 6,
+                        "w": 2,
+                        "x": 0,
+                        "y": 18
+                    },
+                    "id": 3,
+                    "options": {
+                        "colorMode": "value",
+                        "graphMode": "area",
+                        "justifyMode": "auto",
+                        "orientation": "auto",
+                        "reduceOptions": {
+                            "calcs": [
+                                "lastNotNull"
+                            ],
+                            "fields": "",
+                            "values": false
+                        },
+                        "showPercentChange": false,
+                        "textMode": "auto",
+                        "wideLayout": true
+                    },
+                    "pluginVersion": "10.4.2",
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "grafana-postgresql-datasource",
+                                "uid": "cdjbt9pbix3wgc"
+                            },
+                            "editorMode": "code",
+                            "format": "table",
+                            "rawQuery": true,
+                            "rawSql": "SELECT COUNT(id) FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])",
+                            "refId": "A",
+                            "sql": {
+                                "columns": [
+                                    {
+                                        "name": "COUNT",
+                                        "parameters": [
+                                            {
+                                                "name": "id",
+                                                "type": "functionParameter"
+                                            }
+                                        ],
+                                        "type": "function"
+                                    }
+                                ],
+                                "groupBy": [
+                                    {
+                                        "property": {
+                                            "type": "string"
+                                        },
+                                        "type": "groupBy"
+                                    }
+                                ],
+                                "limit": 50
+                            },
+                            "table": "autoria"
+                        }
+                    ],
+                    "title": "Cars",
+                    "type": "stat"
+                },
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "cdjbt9pbix3wgc"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "fixedColor": "#d4f3d0",
+                                "mode": "fixed"
+                            },
+                            "fieldMinMax": false,
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    },
+                                    {
+                                        "color": "red",
+                                        "value": 80
+                                    }
+                                ]
+                            },
+                            "unit": "currencyUSD"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 3,
+                        "w": 2,
+                        "x": 2,
+                        "y": 18
+                    },
+                    "id": 8,
+                    "options": {
+                        "colorMode": "value",
+                        "graphMode": "area",
+                        "justifyMode": "auto",
+                        "orientation": "auto",
+                        "reduceOptions": {
+                            "calcs": [],
+                            "fields": "",
+                            "values": false
+                        },
+                        "showPercentChange": false,
+                        "textMode": "auto",
+                        "wideLayout": true
+                    },
+                    "pluginVersion": "10.4.2",
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "grafana-postgresql-datasource",
+                                "uid": "adj4rz32x4v7ka"
+                            },
+                            "editorMode": "code",
+                            "format": "table",
+                            "rawQuery": true,
+                            "rawSql": "SELECT MIN(price) FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])",
+                            "refId": "A",
+                            "sql": {
+                                "columns": [
+                                    {
+                                        "name": "AVG",
+                                        "parameters": [
+                                            {
+                                                "name": "price",
+                                                "type": "functionParameter"
+                                            }
+                                        ],
+                                        "type": "function"
+                                    }
+                                ],
+                                "groupBy": [
+                                    {
+                                        "property": {
+                                            "type": "string"
+                                        },
+                                        "type": "groupBy"
+                                    }
+                                ],
+                                "limit": 50,
+                                "whereJsonTree": {
+                                    "children1": [
+                                        {
+                                            "id": "8ba88899-4567-489a-bcde-f18efcf2a432",
+                                            "properties": {
+                                                "field": "brand",
+                                                "fieldSrc": "field",
+                                                "operator": "like",
+                                                "value": [
+                                                    "$brand"
+                                                ],
+                                                "valueSrc": [
+                                                    "value"
+                                                ],
+                                                "valueType": [
+                                                    "text"
+                                                ]
+                                            },
+                                            "type": "rule"
+                                        }
+                                    ],
+                                    "id": "99b98aab-0123-4456-b89a-b18efceb370a",
+                                    "type": "group"
+                                },
+                                "whereString": "brand LIKE '%$brand%'"
+                            },
+                            "table": "autoria"
+                        }
+                    ],
+                    "title": "Min Price ($)",
+                    "type": "stat"
+                },
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "cdjbt9pbix3wgc"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "fixedColor": "dark-green",
+                                "mode": "fixed"
+                            },
+                            "fieldMinMax": false,
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    },
+                                    {
+                                        "color": "red",
+                                        "value": 80
+                                    }
+                                ]
+                            },
+                            "unit": "currencyUSD"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 3,
+                        "w": 2,
+                        "x": 4,
+                        "y": 18
+                    },
+                    "id": 1,
+                    "options": {
+                        "colorMode": "value",
+                        "graphMode": "area",
+                        "justifyMode": "auto",
+                        "orientation": "auto",
+                        "reduceOptions": {
+                            "calcs": [
+                                "lastNotNull"
+                            ],
+                            "fields": "",
+                            "values": false
+                        },
+                        "showPercentChange": false,
+                        "textMode": "auto",
+                        "wideLayout": true
+                    },
+                    "pluginVersion": "10.4.2",
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "grafana-postgresql-datasource",
+                                "uid": "adj4rz32x4v7ka"
+                            },
+                            "editorMode": "code",
+                            "format": "table",
+                            "rawQuery": true,
+                            "rawSql": "SELECT AVG(price) FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])",
+                            "refId": "A",
+                            "sql": {
+                                "columns": [
+                                    {
+                                        "name": "AVG",
+                                        "parameters": [
+                                            {
+                                                "name": "price",
+                                                "type": "functionParameter"
+                                            }
+                                        ],
+                                        "type": "function"
+                                    }
+                                ],
+                                "groupBy": [
+                                    {
+                                        "property": {
+                                            "type": "string"
+                                        },
+                                        "type": "groupBy"
+                                    }
+                                ],
+                                "limit": 50,
+                                "whereJsonTree": {
+                                    "children1": [
+                                        {
+                                            "id": "8ba88899-4567-489a-bcde-f18efcf2a432",
+                                            "properties": {
+                                                "field": "brand",
+                                                "fieldSrc": "field",
+                                                "operator": "like",
+                                                "value": [
+                                                    "$brand"
+                                                ],
+                                                "valueSrc": [
+                                                    "value"
+                                                ],
+                                                "valueType": [
+                                                    "text"
+                                                ]
+                                            },
+                                            "type": "rule"
+                                        }
+                                    ],
+                                    "id": "99b98aab-0123-4456-b89a-b18efceb370a",
+                                    "type": "group"
+                                },
+                                "whereString": "brand LIKE '%$brand%'"
+                            },
+                            "table": "autoria"
+                        }
+                    ],
+                    "title": "Average Price ($)",
+                    "type": "stat"
+                },
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "cdjbt9pbix3wgc"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "fixedColor": "#006f4f",
+                                "mode": "fixed"
+                            },
+                            "fieldMinMax": false,
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    },
+                                    {
+                                        "color": "red",
+                                        "value": 80
+                                    }
+                                ]
+                            },
+                            "unit": "currencyUSD"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 3,
+                        "w": 2,
+                        "x": 6,
+                        "y": 18
+                    },
+                    "id": 9,
+                    "options": {
+                        "colorMode": "value",
+                        "graphMode": "area",
+                        "justifyMode": "auto",
+                        "orientation": "auto",
+                        "reduceOptions": {
+                            "calcs": [
+                                "lastNotNull"
+                            ],
+                            "fields": "",
+                            "values": false
+                        },
+                        "showPercentChange": false,
+                        "textMode": "auto",
+                        "wideLayout": true
+                    },
+                    "pluginVersion": "10.4.2",
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "grafana-postgresql-datasource",
+                                "uid": "adj4rz32x4v7ka"
+                            },
+                            "editorMode": "code",
+                            "format": "table",
+                            "rawQuery": true,
+                            "rawSql": "SELECT MAX(price) FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])",
+                            "refId": "A",
+                            "sql": {
+                                "columns": [
+                                    {
+                                        "name": "AVG",
+                                        "parameters": [
+                                            {
+                                                "name": "price",
+                                                "type": "functionParameter"
+                                            }
+                                        ],
+                                        "type": "function"
+                                    }
+                                ],
+                                "groupBy": [
+                                    {
+                                        "property": {
+                                            "type": "string"
+                                        },
+                                        "type": "groupBy"
+                                    }
+                                ],
+                                "limit": 50,
+                                "whereJsonTree": {
+                                    "children1": [
+                                        {
+                                            "id": "8ba88899-4567-489a-bcde-f18efcf2a432",
+                                            "properties": {
+                                                "field": "brand",
+                                                "fieldSrc": "field",
+                                                "operator": "like",
+                                                "value": [
+                                                    "$brand"
+                                                ],
+                                                "valueSrc": [
+                                                    "value"
+                                                ],
+                                                "valueType": [
+                                                    "text"
+                                                ]
+                                            },
+                                            "type": "rule"
+                                        }
+                                    ],
+                                    "id": "99b98aab-0123-4456-b89a-b18efceb370a",
+                                    "type": "group"
+                                },
+                                "whereString": "brand LIKE '%$brand%'"
+                            },
+                            "table": "autoria"
+                        }
+                    ],
+                    "title": "Max Price ($)",
+                    "type": "stat"
+                },
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "cdjbt9pbix3wgc"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "fixedColor": "semi-dark-purple",
+                                "mode": "shades"
+                            },
+                            "custom": {
+                                "align": "auto",
+                                "cellOptions": {
+                                    "type": "color-text"
+                                },
+                                "filterable": false,
+                                "inspect": false,
+                                "minWidth": 100
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            }
+                        },
+                        "overrides": [
+                            {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "mileage"
+                                },
+                                "properties": [
+                                    {
+                                        "id": "custom.width",
+                                        "value": 100
+                                    },
+                                    {
+                                        "id": "color",
+                                        "value": {
+                                            "fixedColor": "super-light-red",
+                                            "mode": "fixed"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "price"
+                                },
+                                "properties": [
+                                    {
+                                        "id": "unit",
+                                        "value": "currencyUSD"
+                                    },
+                                    {
+                                        "id": "custom.width",
+                                        "value": 100
+                                    },
+                                    {
+                                        "id": "color",
+                                        "value": {
+                                            "mode": "continuous-GrYlRd"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "gear"
+                                },
+                                "properties": [
+                                    {
+                                        "id": "color",
+                                        "value": {
+                                            "fixedColor": "text",
+                                            "mode": "fixed"
+                                        }
+                                    },
+                                    {
+                                        "id": "custom.width",
+                                        "value": 150
+                                    }
+                                ]
+                            },
+                            {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "year"
+                                },
+                                "properties": [
+                                    {
+                                        "id": "custom.width",
+                                        "value": 100
+                                    },
+                                    {
+                                        "id": "color",
+                                        "value": {
+                                            "fixedColor": "super-light-blue",
+                                            "mode": "fixed"
+                                        }
+                                    },
+                                    {
+                                        "id": "custom.width",
+                                        "value": 100
+                                    }
+                                ]
+                            },
+                            {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "engine"
+                                },
+                                "properties": [
+                                    {
+                                        "id": "custom.width",
+                                        "value": 100
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "gridPos": {
+                        "h": 18,
+                        "w": 10,
+                        "x": 8,
+                        "y": 18
+                    },
+                    "id": 5,
+                    "options": {
+                        "cellHeight": "sm",
+                        "footer": {
+                            "countRows": false,
+                            "enablePagination": true,
+                            "fields": "",
+                            "reducer": [
+                                "sum"
+                            ],
+                            "show": false
+                        },
+                        "showHeader": true,
+                        "sortBy": [
+                            {
+                                "desc": false,
+                                "displayName": "price"
+                            }
+                        ]
+                    },
+                    "pluginVersion": "10.4.2",
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "grafana-postgresql-datasource",
+                                "uid": "cdjbt9pbix3wgc"
+                            },
+                            "editorMode": "code",
+                            "format": "table",
+                            "rawQuery": true,
+                            "rawSql": "SELECT 'https://auto.ria.com/uk' || url as link, engine, gear, year, CAST(mileage AS INT) * 1000 AS mileage, price FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])\nORDER BY price ASC;",
+                            "refId": "A",
+                            "sql": {
+                                "columns": [
+                                    {
+                                        "parameters": [],
+                                        "type": "function"
+                                    }
+                                ],
+                                "groupBy": [
+                                    {
+                                        "property": {
+                                            "type": "string"
+                                        },
+                                        "type": "groupBy"
+                                    }
+                                ],
+                                "limit": 50
+                            }
+                        }
+                    ],
+                    "title": "Lots",
+                    "type": "table"
+                },
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "cdjbt9pbix3wgc"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "fixedColor": "#bf8087",
+                                "mode": "fixed"
+                            },
+                            "fieldMinMax": false,
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    },
+                                    {
+                                        "color": "red",
+                                        "value": 80
+                                    }
+                                ]
+                            },
+                            "unit": "none"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 3,
+                        "w": 2,
+                        "x": 2,
+                        "y": 21
+                    },
+                    "id": 6,
+                    "options": {
+                        "colorMode": "value",
+                        "graphMode": "area",
+                        "justifyMode": "auto",
+                        "orientation": "auto",
+                        "reduceOptions": {
+                            "calcs": [
+                                "lastNotNull"
+                            ],
+                            "fields": "",
+                            "values": false
+                        },
+                        "showPercentChange": false,
+                        "textMode": "auto",
+                        "wideLayout": true
+                    },
+                    "pluginVersion": "10.4.2",
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "grafana-postgresql-datasource",
+                                "uid": "adj4rz32x4v7ka"
+                            },
+                            "editorMode": "code",
+                            "format": "table",
+                            "rawQuery": true,
+                            "rawSql": "SELECT AVG(mileage) * 1000 FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])",
+                            "refId": "A",
+                            "sql": {
+                                "columns": [
+                                    {
+                                        "name": "AVG",
+                                        "parameters": [
+                                            {
+                                                "name": "price",
+                                                "type": "functionParameter"
+                                            }
+                                        ],
+                                        "type": "function"
+                                    }
+                                ],
+                                "groupBy": [
+                                    {
+                                        "property": {
+                                            "type": "string"
+                                        },
+                                        "type": "groupBy"
+                                    }
+                                ],
+                                "limit": 50,
+                                "whereJsonTree": {
+                                    "children1": [
+                                        {
+                                            "id": "8ba88899-4567-489a-bcde-f18efcf2a432",
+                                            "properties": {
+                                                "field": "brand",
+                                                "fieldSrc": "field",
+                                                "operator": "like",
+                                                "value": [
+                                                    "$brand"
+                                                ],
+                                                "valueSrc": [
+                                                    "value"
+                                                ],
+                                                "valueType": [
+                                                    "text"
+                                                ]
+                                            },
+                                            "type": "rule"
+                                        }
+                                    ],
+                                    "id": "99b98aab-0123-4456-b89a-b18efceb370a",
+                                    "type": "group"
+                                },
+                                "whereString": "brand LIKE '%$brand%'"
+                            },
+                            "table": "autoria"
+                        }
+                    ],
+                    "title": "Average mileage",
+                    "type": "stat"
+                },
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "cdjbt9pbix3wgc"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "palette-classic"
+                            },
+                            "custom": {
+                                "axisBorderShow": false,
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "fillOpacity": 80,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineWidth": 0,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
+                                }
+                            },
+                            "fieldMinMax": false,
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "none"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 6,
+                        "w": 8,
+                        "x": 0,
+                        "y": 24
+                    },
+                    "id": 4,
+                    "options": {
+                        "barRadius": 0,
+                        "barWidth": 0.81,
+                        "fullHighlight": false,
+                        "groupWidth": 0.54,
+                        "legend": {
+                            "calcs": [
+                                "allValues"
+                            ],
+                            "displayMode": "list",
+                            "placement": "bottom",
+                            "showLegend": false
+                        },
+                        "orientation": "auto",
+                        "showValue": "auto",
+                        "stacking": "none",
+                        "tooltip": {
+                            "mode": "multi",
+                            "sort": "none"
+                        },
+                        "xField": "mileage",
+                        "xTickLabelRotation": 0,
+                        "xTickLabelSpacing": 100
+                    },
+                    "pluginVersion": "10.4.2",
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "grafana-postgresql-datasource",
+                                "uid": "cdjbt9pbix3wgc"
+                            },
+                            "editorMode": "code",
+                            "format": "table",
+                            "rawQuery": true,
+                            "rawSql": "SELECT CAST(mileage/10 AS INT) * 10 as mileage, COUNT(id) FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])\n\n GROUP BY CAST(mileage/10 AS INT)*10;",
+                            "refId": "A",
+                            "sql": {
+                                "columns": [
+                                    {
+                                        "parameters": [],
+                                        "type": "function"
+                                    }
+                                ],
+                                "groupBy": [
+                                    {
+                                        "property": {
+                                            "type": "string"
+                                        },
+                                        "type": "groupBy"
+                                    }
+                                ],
+                                "limit": 50
+                            }
+                        }
+                    ],
+                    "title": "Mileage distribution",
+                    "type": "barchart"
+                },
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "cdjbt9pbix3wgc"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "fixedColor": "#ffbaba",
+                                "mode": "fixed"
+                            },
+                            "custom": {
+                                "axisBorderShow": false,
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "fillOpacity": 80,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineWidth": 0,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
+                                }
+                            },
+                            "fieldMinMax": false,
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "currencyUSD"
+                        },
+                        "overrides": [
+                            {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "count"
+                                },
+                                "properties": [
+                                    {
+                                        "id": "unit",
+                                        "value": "none"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "gridPos": {
+                        "h": 6,
+                        "w": 8,
+                        "x": 0,
+                        "y": 30
+                    },
+                    "id": 7,
+                    "options": {
+                        "barRadius": 0,
+                        "barWidth": 0.81,
+                        "fullHighlight": false,
+                        "groupWidth": 0.19,
+                        "legend": {
+                            "calcs": [
+                                "allValues"
+                            ],
+                            "displayMode": "list",
+                            "placement": "bottom",
+                            "showLegend": false
+                        },
+                        "orientation": "auto",
+                        "showValue": "auto",
+                        "stacking": "none",
+                        "tooltip": {
+                            "mode": "multi",
+                            "sort": "none"
+                        },
+                        "xField": "price",
+                        "xTickLabelRotation": 0,
+                        "xTickLabelSpacing": 100
+                    },
+                    "pluginVersion": "10.4.2",
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "grafana-postgresql-datasource",
+                                "uid": "cdjbt9pbix3wgc"
+                            },
+                            "editorMode": "code",
+                            "format": "table",
+                            "rawQuery": true,
+                            "rawSql": "SELECT CAST(price/100 AS INT) * 100 AS price, count(id) FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])\n\n GROUP BY CAST(price/100 AS INT) ORDER BY price;",
+                            "refId": "A",
+                            "sql": {
+                                "columns": [
+                                    {
+                                        "parameters": [],
+                                        "type": "function"
+                                    }
+                                ],
+                                "groupBy": [
+                                    {
+                                        "property": {
+                                            "type": "string"
+                                        },
+                                        "type": "groupBy"
+                                    }
+                                ],
+                                "limit": 50
+                            }
+                        }
+                    ],
+                    "title": "Price distribution",
+                    "type": "barchart"
+                }
+            ],
             "title": "Car stat",
             "type": "row"
-        },
-        {
-            "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "cdjbt9pbix3wgc"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "fixedColor": "light-blue",
-                        "mode": "fixed"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 6,
-                "w": 2,
-                "x": 0,
-                "y": 18
-            },
-            "id": 3,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "10.4.2",
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "cdjbt9pbix3wgc"
-                    },
-                    "editorMode": "code",
-                    "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT COUNT(id) FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])",
-                    "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "name": "COUNT",
-                                "parameters": [
-                                    {
-                                        "name": "id",
-                                        "type": "functionParameter"
-                                    }
-                                ],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
-                    },
-                    "table": "autoria"
-                }
-            ],
-            "title": "Cars",
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "cdjbt9pbix3wgc"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "fixedColor": "#d4f3d0",
-                        "mode": "fixed"
-                    },
-                    "fieldMinMax": false,
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
-                    },
-                    "unit": "currencyUSD"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 3,
-                "w": 2,
-                "x": 2,
-                "y": 18
-            },
-            "id": 8,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                    "calcs": [],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "10.4.2",
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "adj4rz32x4v7ka"
-                    },
-                    "editorMode": "code",
-                    "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT MIN(price) FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])",
-                    "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "name": "AVG",
-                                "parameters": [
-                                    {
-                                        "name": "price",
-                                        "type": "functionParameter"
-                                    }
-                                ],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50,
-                        "whereJsonTree": {
-                            "children1": [
-                                {
-                                    "id": "8ba88899-4567-489a-bcde-f18efcf2a432",
-                                    "properties": {
-                                        "field": "brand",
-                                        "fieldSrc": "field",
-                                        "operator": "like",
-                                        "value": [
-                                            "$brand"
-                                        ],
-                                        "valueSrc": [
-                                            "value"
-                                        ],
-                                        "valueType": [
-                                            "text"
-                                        ]
-                                    },
-                                    "type": "rule"
-                                }
-                            ],
-                            "id": "99b98aab-0123-4456-b89a-b18efceb370a",
-                            "type": "group"
-                        },
-                        "whereString": "brand LIKE '%$brand%'"
-                    },
-                    "table": "autoria"
-                }
-            ],
-            "title": "Min Price ($)",
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "cdjbt9pbix3wgc"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "fixedColor": "dark-green",
-                        "mode": "fixed"
-                    },
-                    "fieldMinMax": false,
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
-                    },
-                    "unit": "currencyUSD"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 3,
-                "w": 2,
-                "x": 4,
-                "y": 18
-            },
-            "id": 1,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "10.4.2",
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "adj4rz32x4v7ka"
-                    },
-                    "editorMode": "code",
-                    "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT AVG(price) FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])",
-                    "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "name": "AVG",
-                                "parameters": [
-                                    {
-                                        "name": "price",
-                                        "type": "functionParameter"
-                                    }
-                                ],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50,
-                        "whereJsonTree": {
-                            "children1": [
-                                {
-                                    "id": "8ba88899-4567-489a-bcde-f18efcf2a432",
-                                    "properties": {
-                                        "field": "brand",
-                                        "fieldSrc": "field",
-                                        "operator": "like",
-                                        "value": [
-                                            "$brand"
-                                        ],
-                                        "valueSrc": [
-                                            "value"
-                                        ],
-                                        "valueType": [
-                                            "text"
-                                        ]
-                                    },
-                                    "type": "rule"
-                                }
-                            ],
-                            "id": "99b98aab-0123-4456-b89a-b18efceb370a",
-                            "type": "group"
-                        },
-                        "whereString": "brand LIKE '%$brand%'"
-                    },
-                    "table": "autoria"
-                }
-            ],
-            "title": "Average Price ($)",
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "cdjbt9pbix3wgc"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "fixedColor": "#006f4f",
-                        "mode": "fixed"
-                    },
-                    "fieldMinMax": false,
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
-                    },
-                    "unit": "currencyUSD"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 3,
-                "w": 2,
-                "x": 6,
-                "y": 18
-            },
-            "id": 9,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "10.4.2",
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "adj4rz32x4v7ka"
-                    },
-                    "editorMode": "code",
-                    "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT MAX(price) FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])",
-                    "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "name": "AVG",
-                                "parameters": [
-                                    {
-                                        "name": "price",
-                                        "type": "functionParameter"
-                                    }
-                                ],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50,
-                        "whereJsonTree": {
-                            "children1": [
-                                {
-                                    "id": "8ba88899-4567-489a-bcde-f18efcf2a432",
-                                    "properties": {
-                                        "field": "brand",
-                                        "fieldSrc": "field",
-                                        "operator": "like",
-                                        "value": [
-                                            "$brand"
-                                        ],
-                                        "valueSrc": [
-                                            "value"
-                                        ],
-                                        "valueType": [
-                                            "text"
-                                        ]
-                                    },
-                                    "type": "rule"
-                                }
-                            ],
-                            "id": "99b98aab-0123-4456-b89a-b18efceb370a",
-                            "type": "group"
-                        },
-                        "whereString": "brand LIKE '%$brand%'"
-                    },
-                    "table": "autoria"
-                }
-            ],
-            "title": "Max Price ($)",
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "cdjbt9pbix3wgc"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "fixedColor": "semi-dark-purple",
-                        "mode": "shades"
-                    },
-                    "custom": {
-                        "align": "auto",
-                        "cellOptions": {
-                            "type": "color-text"
-                        },
-                        "filterable": false,
-                        "inspect": false,
-                        "minWidth": 100
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    }
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "mileage"
-                        },
-                        "properties": [
-                            {
-                                "id": "custom.width",
-                                "value": 100
-                            },
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "super-light-red",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "price"
-                        },
-                        "properties": [
-                            {
-                                "id": "unit",
-                                "value": "currencyUSD"
-                            },
-                            {
-                                "id": "custom.width",
-                                "value": 100
-                            },
-                            {
-                                "id": "color",
-                                "value": {
-                                    "mode": "continuous-GrYlRd"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "gear"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "text",
-                                    "mode": "fixed"
-                                }
-                            },
-                            {
-                                "id": "custom.width",
-                                "value": 150
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "year"
-                        },
-                        "properties": [
-                            {
-                                "id": "custom.width",
-                                "value": 100
-                            },
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "super-light-blue",
-                                    "mode": "fixed"
-                                }
-                            },
-                            {
-                                "id": "custom.width",
-                                "value": 100
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "engine"
-                        },
-                        "properties": [
-                            {
-                                "id": "custom.width",
-                                "value": 100
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 18,
-                "w": 10,
-                "x": 8,
-                "y": 18
-            },
-            "id": 5,
-            "options": {
-                "cellHeight": "sm",
-                "footer": {
-                    "countRows": false,
-                    "enablePagination": true,
-                    "fields": "",
-                    "reducer": [
-                        "sum"
-                    ],
-                    "show": false
-                },
-                "showHeader": true,
-                "sortBy": []
-            },
-            "pluginVersion": "10.4.2",
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "cdjbt9pbix3wgc"
-                    },
-                    "editorMode": "code",
-                    "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT 'https://auto.ria.com/uk' || url as link, engine, gear, year, CAST(mileage AS INT) * 1000 AS mileage, price FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])\nORDER BY price ASC;",
-                    "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
-                    }
-                }
-            ],
-            "title": "Lots",
-            "type": "table"
-        },
-        {
-            "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "cdjbt9pbix3wgc"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "fixedColor": "#bf8087",
-                        "mode": "fixed"
-                    },
-                    "fieldMinMax": false,
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
-                    },
-                    "unit": "none"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 3,
-                "w": 2,
-                "x": 2,
-                "y": 21
-            },
-            "id": 6,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "10.4.2",
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "adj4rz32x4v7ka"
-                    },
-                    "editorMode": "code",
-                    "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT AVG(mileage) * 1000 FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])",
-                    "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "name": "AVG",
-                                "parameters": [
-                                    {
-                                        "name": "price",
-                                        "type": "functionParameter"
-                                    }
-                                ],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50,
-                        "whereJsonTree": {
-                            "children1": [
-                                {
-                                    "id": "8ba88899-4567-489a-bcde-f18efcf2a432",
-                                    "properties": {
-                                        "field": "brand",
-                                        "fieldSrc": "field",
-                                        "operator": "like",
-                                        "value": [
-                                            "$brand"
-                                        ],
-                                        "valueSrc": [
-                                            "value"
-                                        ],
-                                        "valueType": [
-                                            "text"
-                                        ]
-                                    },
-                                    "type": "rule"
-                                }
-                            ],
-                            "id": "99b98aab-0123-4456-b89a-b18efceb370a",
-                            "type": "group"
-                        },
-                        "whereString": "brand LIKE '%$brand%'"
-                    },
-                    "table": "autoria"
-                }
-            ],
-            "title": "Average mileage",
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "cdjbt9pbix3wgc"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisBorderShow": false,
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "fillOpacity": 80,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "lineWidth": 0,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "fieldMinMax": false,
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "none"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 6,
-                "w": 8,
-                "x": 0,
-                "y": 24
-            },
-            "id": 4,
-            "options": {
-                "barRadius": 0,
-                "barWidth": 0.81,
-                "fullHighlight": false,
-                "groupWidth": 0.54,
-                "legend": {
-                    "calcs": [
-                        "allValues"
-                    ],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": false
-                },
-                "orientation": "auto",
-                "showValue": "auto",
-                "stacking": "none",
-                "tooltip": {
-                    "mode": "multi",
-                    "sort": "none"
-                },
-                "xField": "mileage",
-                "xTickLabelRotation": 0,
-                "xTickLabelSpacing": 100
-            },
-            "pluginVersion": "10.4.2",
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "cdjbt9pbix3wgc"
-                    },
-                    "editorMode": "code",
-                    "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT CAST(mileage/10 AS INT) * 10 as mileage, COUNT(id) FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])\n\n GROUP BY CAST(mileage/10 AS INT)*10;",
-                    "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
-                    }
-                }
-            ],
-            "title": "Mileage distribution",
-            "type": "barchart"
-        },
-        {
-            "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "cdjbt9pbix3wgc"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "fixedColor": "#ffbaba",
-                        "mode": "fixed"
-                    },
-                    "custom": {
-                        "axisBorderShow": false,
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "fillOpacity": 80,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "lineWidth": 0,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "fieldMinMax": false,
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "currencyUSD"
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "count"
-                        },
-                        "properties": [
-                            {
-                                "id": "unit",
-                                "value": "none"
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 6,
-                "w": 8,
-                "x": 0,
-                "y": 30
-            },
-            "id": 7,
-            "options": {
-                "barRadius": 0,
-                "barWidth": 0.81,
-                "fullHighlight": false,
-                "groupWidth": 0.19,
-                "legend": {
-                    "calcs": [
-                        "allValues"
-                    ],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": false
-                },
-                "orientation": "auto",
-                "showValue": "auto",
-                "stacking": "none",
-                "tooltip": {
-                    "mode": "multi",
-                    "sort": "none"
-                },
-                "xField": "price",
-                "xTickLabelRotation": 0,
-                "xTickLabelSpacing": 100
-            },
-            "pluginVersion": "10.4.2",
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "cdjbt9pbix3wgc"
-                    },
-                    "editorMode": "code",
-                    "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT CAST(price/100 AS INT) * 100 AS price, count(id) FROM autoria WHERE \n                                brand LIKE any(array[${brand:sqlstring}]) \n                                AND model LIKE any(array[${model:sqlstring}]) \n                                AND year BETWEEN ${year_min:raw} AND ${year_max:raw} \n                                AND mileage BETWEEN ${min_mileage:raw} AND ${max_mileage:raw} \n                                AND fuel LIKE any(array[${fuel:sqlstring}]) \n                                AND generation LIKE any(array[${generation:sqlstring}]) \n                                AND gear LIKE any(array[${gear:sqlstring}]) \n                                AND engine LIKE any(array[${engine:sqlstring}]) \n                                AND equipment LIKE any(array[${equipment:sqlstring}]) \n                                AND modification LIKE any(array[${modification:sqlstring}])\n\n GROUP BY CAST(price/100 AS INT) ORDER BY price;",
-                    "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
-                    }
-                }
-            ],
-            "title": "Price distribution",
-            "type": "barchart"
         }
     ],
     "refresh": "",
@@ -1898,6 +2029,26 @@
                 "query": "999999",
                 "skipUrlSync": false,
                 "type": "textbox"
+            },
+            {
+                "current": {
+                    "selected": false,
+                    "text": "0",
+                    "value": "0"
+                },
+                "hide": 0,
+                "label": "Cars",
+                "name": "cars_count",
+                "options": [
+                    {
+                        "selected": true,
+                        "text": "0",
+                        "value": "0"
+                    }
+                ],
+                "query": "0",
+                "skipUrlSync": false,
+                "type": "textbox"
             }
         ]
     },
@@ -1906,11 +2057,14 @@
         "to": "now"
     },
     "timepicker": {
-        "hidden": false
+        "hidden": true,
+        "refresh_intervals": [
+            "1m"
+        ]
     },
     "timezone": "browser",
     "title": "Autoria Stats",
     "uid": "fdjbt1obdcbuoe",
-    "version": 48,
+    "version": 53,
     "weekStart": "monday"
 }
