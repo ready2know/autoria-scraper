@@ -49,7 +49,10 @@ func main() {
 	}
 
 	// Prepare the SQL statement
-	stmt, err := tx.Prepare("INSERT INTO autoria(id,url,mileage,fuel,gear,price,city,brand,model,year,engine,generation,userId,image,equipment,modification,licensePlate,vin) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) ON CONFLICT (id) DO UPDATE SET (price, updated)=(excluded.price, DEFAULT);")
+	stmt, err := tx.Prepare(`INSERT INTO 
+    	autoria(id,url,mileage,fuel,gear,price,city,brand,model,year,engine,generation,userId,image,equipment,modification,licensePlate,vin) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
+		ON CONFLICT (id) DO UPDATE SET (price, updated)=(excluded.price, DEFAULT);`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,7 +65,17 @@ func main() {
 		}
 
 		// Execute the prepared SQL statement with the data from the CSV line
-		_, err = stmt.Exec(record[0], record[1], record[2], record[3], record[4], record[5], record[6], record[7], record[8], record[9], record[10], record[11], record[12], record[13], record[14], record[15], record[16], record[17])
+		_, err = stmt.Exec(
+			record[0], record[1],
+			record[2], record[3],
+			record[4], record[5],
+			record[6], record[7],
+			record[8], record[9],
+			record[10], record[11],
+			record[12], record[13],
+			record[14], record[15],
+			record[16], record[17],
+		)
 		if err != nil {
 			log.Fatal(err)
 		}

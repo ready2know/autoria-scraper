@@ -44,17 +44,13 @@ func parseHTMLFile(file *os.File) []models.AutoProduct {
 		modification, _ := mainDiv.Attr("data-modification-name")
 
 		photo, _ := s.Find(".ticket-photo img").Attr("src")
-		price, _ := s.Find(".price-ticket").Attr("data-main-price")
-		currency, _ := s.Find(".price-ticket").Attr("data-main-currency")
+		price := s.Find("[data-currency='USD']").Text()
 
-		carPrice := 0
-		if len(price) != 0 {
-			if currency != "USD" {
-				convertedPrice, _ := strconv.Atoi(price)
-				carPrice = convertedPrice / 39
-			} else {
-				carPrice, _ = strconv.Atoi(price)
-			}
+		price = strings.Replace(price, " ", "", -1)
+		carPrice, parseError := strconv.Atoi(price)
+
+		if len(price) == 0 || parseError != nil {
+			log.Panic("Price parsing failed: %s", parseError)
 		}
 
 		definitionBlock := s.Find(".definition-data")
