@@ -22,6 +22,10 @@ type AppConfig struct {
 		Size                string `json:"size"`
 		SortOrder           string `json:"sort[0].order"`
 		YearGte             string `json:"year[0].gte"`
+		Gearbox             string `json:"gearbox[0]"`
+		Gearbox2            string `json:"gearbox[1]"`
+		Gearbox3            string `json:"gearbox[2]"`
+		Gearbox4            string `json:"gearbox[3]"`
 	} `json:"queryParams"`
 	StartPage      int `json:"startPage"`
 	EndPage        int `json:"endPage"`

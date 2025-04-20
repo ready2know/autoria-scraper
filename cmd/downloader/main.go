@@ -32,6 +32,10 @@ func getSearchParams(pageNumber int) url.Values {
 	params.Add("size", appConfig.QueryParams.Size)
 	params.Add("sort[0].order", appConfig.QueryParams.SortOrder)
 	params.Add("year[0].gte", appConfig.QueryParams.YearGte)
+	params.Add("gearbox[0]", appConfig.QueryParams.Gearbox)
+	params.Add("gearbox[1]", appConfig.QueryParams.Gearbox2)
+	params.Add("gearbox[2]", appConfig.QueryParams.Gearbox3)
+	params.Add("gearbox[3]", appConfig.QueryParams.Gearbox4)
 	params.Add("page", strconv.Itoa(pageNumber))
 
 	return params

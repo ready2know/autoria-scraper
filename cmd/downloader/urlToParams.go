@@ -5,9 +5,9 @@ import (
 	"net/url"
 )
 
-func main() {
+func paramsFromUrl(rawURL string) {
 	// The URL you want to parse
-	rawURL := "?indexName=auto,order_auto,newauto_search&categories.main.id=1&country.origin.id[1].not=643&country.origin.id[2].not=804&country.import.usa.not=-1&price.USD.gte=4000&price.currency=1&abroad.not=0&custom.not=1&page=0&size=100"
+	rawURL = "?indexName=auto,order_auto,newauto_search&categories.main.id=1&country.origin.id[1].not=643&country.origin.id[2].not=804&country.import.usa.not=-1&price.USD.gte=4000&price.currency=1&abroad.not=0&custom.not=1&page=0&size=100"
 
 	// Parse the URL
 	parsedURL, err := url.Parse(rawURL)
